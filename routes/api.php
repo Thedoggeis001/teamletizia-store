@@ -7,7 +7,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Api\ProductController;
 
-// ADMIN controllers
+// Admin controllers
 use App\Http\Controllers\Admin\AdminProductController;
 use App\Http\Controllers\Admin\AdminProductVariantController;
 use App\Http\Controllers\Admin\AdminProductKeyController;
@@ -23,10 +23,11 @@ Route::get('/ping', function () {
     return response()->json(['ok' => true]);
 });
 
-// Auth (rate limit brute-force)
+// Auth
+Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
-// Products (PUBLIC)
+// Products
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 
@@ -47,7 +48,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Cart (Order pending)
+    | Cart (pending order)
     |--------------------------------------------------------------------------
     */
     Route::post('/cart', [CartController::class, 'create']);
@@ -68,10 +69,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | ADMIN (auth:sanctum + admin)
+    | Admin routes
     |--------------------------------------------------------------------------
     */
-    Route::middleware(['admin'])
+    Route::middleware('admin')
         ->prefix('admin')
         ->group(function () {
 
@@ -87,10 +88,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             Route::put('/variants/{variant}', [AdminProductVariantController::class, 'update']);
             Route::delete('/variants/{variant}', [AdminProductVariantController::class, 'destroy']);
 
-            // Keys
+            // Product keys
             Route::get('/products/{product}/keys', [AdminProductKeyController::class, 'index']);
-            Route::post('/products/{product}/keys', [AdminProductKeyController::class, 'store']); // singola
-            Route::post('/products/{product}/keys/import', [AdminProductKeyController::class, 'import']); // massivo
+            Route::post('/products/{product}/keys', [AdminProductKeyController::class, 'store']);
+            Route::post('/products/{product}/keys/import', [AdminProductKeyController::class, 'import']);
             Route::delete('/keys/{key}', [AdminProductKeyController::class, 'destroy']);
         });
 });

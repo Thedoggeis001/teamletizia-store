@@ -2,11 +2,43 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
+    /**
+     * Register API
+     */
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+        ]);
+
+        $token = $user->createToken(
+            $request->header('User-Agent') ?? 'store-register-token'
+        )->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registration successful.',
+            'data' => [
+                'token' => $token,
+                'user' => $user,
+            ],
+        ], 201);
+    }
+
     /**
      * Login API
      */
@@ -19,19 +51,25 @@ class AuthController extends Controller
 
         if (!Auth::attempt($credentials)) {
             return response()->json([
-                'error' => 'Credenziali non valide'
+                'success' => false,
+                'message' => 'Invalid credentials.',
             ], 401);
         }
 
+        /** @var \App\Models\User $user */
         $user = $request->user();
 
         $token = $user->createToken(
-            $request->header('User-Agent') ?? 'api-token'
+            $request->header('User-Agent') ?? 'store-login-token'
         )->plainTextToken;
 
         return response()->json([
-            'token' => $token,
-            'user' => $user,
+            'success' => true,
+            'message' => 'Login successful.',
+            'data' => [
+                'token' => $token,
+                'user' => $user,
+            ],
         ]);
     }
 
@@ -40,7 +78,10 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json([
+            'success' => true,
+            'data' => $request->user(),
+        ]);
     }
 
     /**
@@ -48,10 +89,15 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+
+        if ($user && $user->currentAccessToken()) {
+            $user->currentAccessToken()->delete();
+        }
 
         return response()->json([
-            'message' => 'Logout effettuato'
+            'success' => true,
+            'message' => 'Logout successful.',
         ]);
     }
 }
