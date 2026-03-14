@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ImageUploadController;
 
 // Admin controllers
 use App\Http\Controllers\Admin\AdminProductController;
@@ -30,6 +31,9 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:lo
 // Products
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
+
+// Image upload
+Route::post('/upload-image', [ImageUploadController::class, 'upload']);
 
 /*
 |--------------------------------------------------------------------------

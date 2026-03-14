@@ -63,6 +63,7 @@ class AdminProductController extends Controller
             'description' => ['nullable', 'string'],
             'type' => ['required', 'in:digital,physical'],
             'base_price' => ['required', 'numeric', 'min:0'],
+            'image_url' => ['nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
@@ -71,6 +72,7 @@ class AdminProductController extends Controller
             'description' => $validated['description'] ?? null,
             'type' => $validated['type'],
             'base_price' => $validated['base_price'],
+            'image_url' => $validated['image_url'] ?? null,
             'is_active' => (bool) ($validated['is_active'] ?? true),
         ]);
 
@@ -89,6 +91,7 @@ class AdminProductController extends Controller
             'description' => ['nullable', 'string'],
             'type' => ['sometimes', 'in:digital,physical'],
             'base_price' => ['sometimes', 'numeric', 'min:0'],
+            'image_url' => ['nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
@@ -105,7 +108,6 @@ class AdminProductController extends Controller
 
     public function destroy(Product $product)
     {
-        // soft delete? se non hai soft deletes, questa cancella
         $product->delete();
 
         return response()->json([
