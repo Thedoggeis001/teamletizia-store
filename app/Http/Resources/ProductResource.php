@@ -17,7 +17,6 @@ class ProductResource extends JsonResource
             'type' => $this->type,
             'base_price' => (float) $this->base_price,
 
-            // compare solo se impostata dal controller (show)
             'has_keys' => $this->when(
                 isset($this->resource->has_keys),
                 (bool) $this->resource->has_keys
