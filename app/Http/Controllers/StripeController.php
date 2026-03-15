@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Log;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
 
 class StripeController extends Controller
 {
+    use AuthorizesRequests;
+
     public function createCheckoutSession(Order $order)
     {
         $this->authorize('update', $order);
@@ -57,7 +60,7 @@ class StripeController extends Controller
 
             Log::info('STRIPE LINE ITEMS READY', [
                 'order_id' => $order->id,
-                'line_items' => $lineItems,
+                'line_items_count' => count($lineItems),
             ]);
 
             $session = Session::create([
