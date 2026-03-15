@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\StripeController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ImageUploadController;
 
@@ -35,6 +37,9 @@ Route::get('/products/{product}', [ProductController::class, 'show']);
 // Image upload
 Route::post('/upload-image', [ImageUploadController::class, 'upload']);
 
+// Stripe webhook
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
+
 /*
 |--------------------------------------------------------------------------
 | Protected routes (auth:sanctum + throttle:api)
@@ -59,8 +64,13 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/cart/{order}', [CartController::class, 'show']);
     Route::post('/cart/{order}/items', [CartController::class, 'addItem']);
     Route::delete('/cart/{order}/items/{itemId}', [CartController::class, 'removeItem']);
+
+    // Checkout simulato attuale
     Route::post('/cart/{order}/checkout', [CartController::class, 'checkout'])
         ->middleware('throttle:checkout');
+
+    // Stripe checkout session
+    Route::post('/stripe/checkout/{order}', [StripeController::class, 'createCheckoutSession']);
 
     /*
     |--------------------------------------------------------------------------
