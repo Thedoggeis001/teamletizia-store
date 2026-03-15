@@ -130,6 +130,26 @@ class Order extends Model
         });
     }
 
+    public function removeProductByItemId(int $itemId): void
+    {
+        $this->ensurePending();
+
+        DB::transaction(function () use ($itemId) {
+            $item = $this->items()
+                ->where('id', $itemId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $item) {
+                throw new RuntimeException('Riga carrello non trovata');
+            }
+
+            $item->delete();
+
+            $this->normalizeItems();
+        });
+    }
+
     /* =======================
      * NORMALIZZAZIONE
      * ======================= */
