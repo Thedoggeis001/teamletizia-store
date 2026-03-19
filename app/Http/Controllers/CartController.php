@@ -9,6 +9,7 @@ use App\Models\ProductKey;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\ValidationException;
 
 class CartController extends Controller
 {
@@ -36,7 +37,7 @@ class CartController extends Controller
         $this->authorize('view', $order);
 
         return response()->json(
-            $order->load('items.product')
+            $order->load('items.product', 'items.variant')
         );
     }
 
@@ -55,18 +56,28 @@ class CartController extends Controller
 
         $product = Product::findOrFail($data['product_id']);
 
-        $variant = isset($data['variant_id'])
-            ? ProductVariant::find($data['variant_id'])
-            : null;
+        $variantId = null;
+
+        if (!empty($data['variant_id'])) {
+            $variant = ProductVariant::findOrFail($data['variant_id']);
+
+            if ((int) $variant->product_id !== (int) $product->id) {
+                throw ValidationException::withMessages([
+                    'variant_id' => ['La variante selezionata non appartiene a questo prodotto.'],
+                ]);
+            }
+
+            $variantId = (int) $variant->id;
+        }
 
         $order->addProduct(
             $product,
-            $data['quantity'],
-            $variant
+            (int) $data['quantity'],
+            $variantId
         );
 
         return response()->json(
-            $order->fresh()->load('items.product')
+            $order->fresh()->load('items.product', 'items.variant')
         );
     }
 
@@ -80,7 +91,7 @@ class CartController extends Controller
         $order->removeProductByItemId($itemId);
 
         return response()->json(
-            $order->fresh()->load('items.product')
+            $order->fresh()->load('items.product', 'items.variant')
         );
     }
 
@@ -102,8 +113,7 @@ class CartController extends Controller
         ]);
 
         return DB::transaction(function () use ($order, $data) {
-
-            $order->load('items.product');
+            $order->load('items.product', 'items.variant');
 
             if ($order->items->isEmpty()) {
                 abort(400, 'Carrello vuoto');
@@ -112,9 +122,8 @@ class CartController extends Controller
             $total = 0;
 
             foreach ($order->items as $item) {
-
                 /**
-                 * ✅ SNAPSHOT PREZZO
+                 * SNAPSHOT PREZZO
                  * Se unit_price è già valorizzato → lo rispettiamo
                  * Altrimenti congeliamo il prezzo attuale
                  */
@@ -127,10 +136,9 @@ class CartController extends Controller
                 $total += $price * $item->quantity;
 
                 /**
-                 * 🔐 ASSEGNAZIONE PRODUCT KEY (SOLO DIGITAL)
+                 * ASSEGNAZIONE PRODUCT KEY (SOLO DIGITAL)
                  */
                 if ($item->product->type === 'digital') {
-
                     $keys = ProductKey::where('product_id', $item->product_id)
                         ->whereNull('order_id')
                         ->lockForUpdate()
@@ -151,7 +159,7 @@ class CartController extends Controller
             }
 
             /**
-             * ✅ FINALIZZAZIONE ORDINE
+             * FINALIZZAZIONE ORDINE
              */
             $order->update([
                 'status'            => 'paid',
@@ -161,7 +169,7 @@ class CartController extends Controller
             ]);
 
             return response()->json(
-                $order->fresh()->load('items.product'),
+                $order->fresh()->load('items.product', 'items.variant'),
                 200
             );
         });
