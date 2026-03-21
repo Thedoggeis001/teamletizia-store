@@ -10,60 +10,83 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'password' => ['required', 'string', 'min:8', 'confirmed'],
+            ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-        ]);
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+            ]);
 
-        $token = $user->createToken(
-            $request->header('User-Agent') ?? 'store-register-token'
-        )->plainTextToken;
+            $token = $user->createToken(
+                $request->header('User-Agent') ?? 'store-register-token'
+            )->plainTextToken;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Registration successful.',
-            'data' => [
-                'token' => $token,
-                'user' => $user,
-            ],
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'Registration successful.',
+                'data' => [
+                    'token' => $token,
+                    'user' => $user,
+                ],
+            ], 201);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'DEBUG_REGISTER_EXCEPTION: ' . $e->getMessage(),
+                'type' => get_class($e),
+            ], 500);
+        }
     }
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ]);
+        try {
+            $credentials = $request->validate([
+                'email' => ['required', 'email'],
+                'password' => ['required'],
+            ]);
 
-        $user = User::where('email', $credentials['email'])->first();
+            $user = User::where('email', $credentials['email'])->first();
 
-        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'DEBUG: USER_NOT_FOUND',
+                ], 404);
+            }
+
+            if (! Hash::check($credentials['password'], $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'DEBUG: PASSWORD_MISMATCH',
+                ], 401);
+            }
+
+            $token = $user->createToken(
+                $request->header('User-Agent') ?? 'store-login-token'
+            )->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'DEBUG: LOGIN_OK',
+                'data' => [
+                    'token' => $token,
+                    'user' => $user,
+                ],
+            ]);
+        } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid credentials.',
-            ], 401);
+                'message' => 'DEBUG_LOGIN_EXCEPTION: ' . $e->getMessage(),
+                'type' => get_class($e),
+            ], 500);
         }
-
-        $token = $user->createToken(
-            $request->header('User-Agent') ?? 'store-login-token'
-        )->plainTextToken;
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Login successful.',
-            'data' => [
-                'token' => $token,
-                'user' => $user,
-            ],
-        ]);
     }
 
     public function me(Request $request)
@@ -76,15 +99,23 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        if ($user && $user->currentAccessToken()) {
-            $user->currentAccessToken()->delete();
+            if ($user && $user->currentAccessToken()) {
+                $user->currentAccessToken()->delete();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Logout successful.',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'DEBUG_LOGOUT_EXCEPTION: ' . $e->getMessage(),
+                'type' => get_class($e),
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Logout successful.',
-        ]);
     }
 }
