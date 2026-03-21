@@ -28,7 +28,14 @@ Route::get('/ping', function () {
 
 // Auth
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+
+// TEST MARKER TEMPORANEO
+Route::post('/login', function () {
+    return response()->json([
+        'success' => false,
+        'message' => 'ROUTE_LIVE_MARKER',
+    ], 418);
+})->middleware('throttle:login');
 
 // Products
 Route::get('/products', [ProductController::class, 'index']);
