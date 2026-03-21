@@ -46,47 +46,10 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        try {
-            $credentials = $request->validate([
-                'email' => ['required', 'email'],
-                'password' => ['required'],
-            ]);
-
-            $user = User::where('email', $credentials['email'])->first();
-
-            if (! $user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'DEBUG: USER_NOT_FOUND',
-                ], 404);
-            }
-
-            if (! Hash::check($credentials['password'], $user->password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'DEBUG: PASSWORD_MISMATCH',
-                ], 401);
-            }
-
-            $token = $user->createToken(
-                $request->header('User-Agent') ?? 'store-login-token'
-            )->plainTextToken;
-
-            return response()->json([
-                'success' => true,
-                'message' => 'DEBUG: LOGIN_OK',
-                'data' => [
-                    'token' => $token,
-                    'user' => $user,
-                ],
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'DEBUG_LOGIN_EXCEPTION: ' . $e->getMessage(),
-                'type' => get_class($e),
-            ], 500);
-        }
+        return response()->json([
+            'success' => false,
+            'message' => 'CONTROLLER_LOGIN_LIVE_MARKER',
+        ], 418);
     }
 
     public function me(Request $request)
