@@ -4,13 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    /**
-     * Register API
-     */
     public function register(Request $request)
     {
         $validated = $request->validate([
@@ -22,7 +19,7 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => $validated['password'],
+            'password' => Hash::make($validated['password']),
         ]);
 
         $token = $user->createToken(
@@ -39,9 +36,6 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * Login API
-     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -49,15 +43,14 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if (!Auth::attempt($credentials)) {
+        $user = User::where('email', $credentials['email'])->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid credentials.',
             ], 401);
         }
-
-        /** @var \App\Models\User $user */
-        $user = $request->user();
 
         $token = $user->createToken(
             $request->header('User-Agent') ?? 'store-login-token'
@@ -73,9 +66,6 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Get authenticated user
-     */
     public function me(Request $request)
     {
         return response()->json([
@@ -84,9 +74,6 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Logout API (revoke current token)
-     */
     public function logout(Request $request)
     {
         $user = $request->user();
